@@ -1,22 +1,30 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Termux Wi-Fi Scanner with Frames
+# Termux Wi-Fi Scanner - Color-coded & Frame
 # Legal / Educational
+# Author: Rx Abdullah
 
-echo "🔍 Scanning Wi-Fi networks... (wait a few seconds)"
+# Colors
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+CYAN="\e[36m"
+RESET="\e[0m"
+
+echo -e "${CYAN}🔍 Scanning Wi-Fi networks... (wait a few seconds)${RESET}"
 SCAN_RESULT=$(termux-wifi-scaninfo 2>&1)
 
-# Check JSON validity
+# Check JSON
 if ! echo "$SCAN_RESULT" | jq empty >/dev/null 2>&1; then
-    echo "❌ Error: termux-wifi-scaninfo valid JSON not returned."
+    echo -e "${RED}❌ Error: termux-wifi-scaninfo valid JSON not returned.${RESET}"
     echo "$SCAN_RESULT"
     exit 1
 fi
 
-# Process each network
 echo
-echo "📡 Wi-Fi Networks Scan Results"
-echo "=============================="
+echo -e "${CYAN}📡 Wi-Fi Networks Scan Results${RESET}"
+echo "==================================="
 
+# Process each network
 echo "$SCAN_RESULT" | jq -r '.[] | [
     (.ssid // "<hidden>"),
     .bssid,
@@ -41,26 +49,29 @@ echo "$SCAN_RESULT" | jq -r '.[] | [
 
     # Range estimate from RSSI
     rssi_val=$(echo "$rssi" | sed 's/[^0-9-]//g')
-    if [ -z "$rssi_val" ]; then rng="Unknown"
-    elif [ "$rssi_val" -ge -50 ]; then rng="Very Close (0-10m)"
-    elif [ "$rssi_val" -ge -60 ]; then rng="Close (10-20m)"
-    elif [ "$rssi_val" -ge -70 ]; then rng="Moderate (20-40m)"
-    elif [ "$rssi_val" -ge -80 ]; then rng="Far (40-80m)"
-    else rng="Very Far (>80m)"
+    if [ -z "$rssi_val" ]; then rng="Unknown"; color="$YELLOW"
+    elif [ "$rssi_val" -ge -50 ]; then rng="Very Close (0-10m)"; color="$GREEN"
+    elif [ "$rssi_val" -ge -60 ]; then rng="Close (10-20m)"; color="$GREEN"
+    elif [ "$rssi_val" -ge -70 ]; then rng="Moderate (20-40m)"; color="$YELLOW"
+    elif [ "$rssi_val" -ge -80 ]; then rng="Far (40-80m)"; color="$RED"
+    else rng="Very Far (>80m)"; color="$RED"
     fi
 
-    # Print in a frame
-    echo "┌───────────────────────────────────────────────────────────┐"
-    printf "│ %-15s : %-30s │\n" "SSID" "$ssid"
-    printf "│ %-15s : %-30s │\n" "BSSID" "$bssid"
-    printf "│ %-15s : %-30s │\n" "RSSI" "$rssi dBm"
-    printf "│ %-15s : %-30s │\n" "Channel" "$channel"
-    printf "│ %-15s : %-30s │\n" "Frequency" "$freq MHz"
-    printf "│ %-15s : %-30s │\n" "Security" "$sec"
-    printf "│ %-15s : %-30s │\n" "Range" "$rng"
-    printf "│ %-15s : %-30s │\n" "Password" "NULL"
-    echo "└───────────────────────────────────────────────────────────┘"
-    echo
+    # Highlight hidden network
+    if [ "$ssid" == "<hidden>" ]; then color="$CYAN"; fi
+
+    # Print in frame
+    echo -e "${color}┌───────────────────────────────────────────────┐${RESET}"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "SSID" "$ssid"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "BSSID" "$bssid"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "RSSI" "$rssi dBm"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "Channel" "$channel"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "Frequency" "$freq MHz"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "Security" "$sec"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "Range" "$rng"
+    printf "${color}│ %-15s : %-30s │${RESET}\n" "Password" "NULL"
+    echo -e "${color}└───────────────────────────────────────────────┘${RESET}\n"
+
 done
 
-echo "✅ Scan Completed. All passwords shown as NULL (legal & safe)"
+echo -e "${GREEN}✅ Scan Completed. All passwords shown as NULL (legal & safe)${RESET}"
