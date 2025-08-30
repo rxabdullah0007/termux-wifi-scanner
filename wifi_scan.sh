@@ -1,29 +1,22 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Wi-Fi Scanner + Password test (Education purpose)
-# Author: Rx Abdullah
-
-# =============================
-# ⚠️ Legal Notice:
-# This tool is ONLY for your own Wi-Fi or lab network testing.
-# Do NOT use on networks you don't own. 
-# =============================
+# Termux Wi-Fi Scanner with Frames
+# Legal / Educational
 
 echo "🔍 Scanning Wi-Fi networks... (wait a few seconds)"
 SCAN_RESULT=$(termux-wifi-scaninfo 2>&1)
 
-# Check JSON
+# Check JSON validity
 if ! echo "$SCAN_RESULT" | jq empty >/dev/null 2>&1; then
     echo "❌ Error: termux-wifi-scaninfo valid JSON not returned."
-    echo "Output was:"
     echo "$SCAN_RESULT"
     exit 1
 fi
 
-# Print header
-printf "%-30s %-20s %-7s %-8s %-10s %-10s %s\n" "SSID" "BSSID" "RSSI" "Channel" "Freq(MHz)" "Security" "Range"
-printf "%s\n" "---------------------------------------------------------------------------------------------------------"
+# Process each network
+echo
+echo "📡 Wi-Fi Networks Scan Results"
+echo "=============================="
 
-# Process Wi-Fi networks
 echo "$SCAN_RESULT" | jq -r '.[] | [
     (.ssid // "<hidden>"),
     .bssid,
@@ -56,35 +49,18 @@ echo "$SCAN_RESULT" | jq -r '.[] | [
     else rng="Very Far (>80m)"
     fi
 
-    # Print formatted row
-    printf "%-30s %-20s %-7s %-8s %-10s %-10s %s\n" "$ssid" "$bssid" "$rssi" "$channel" "$freq" "$sec" "$rng"
-
+    # Print in a frame
+    echo "┌───────────────────────────────────────────────────────────┐"
+    printf "│ %-15s : %-30s │\n" "SSID" "$ssid"
+    printf "│ %-15s : %-30s │\n" "BSSID" "$bssid"
+    printf "│ %-15s : %-30s │\n" "RSSI" "$rssi dBm"
+    printf "│ %-15s : %-30s │\n" "Channel" "$channel"
+    printf "│ %-15s : %-30s │\n" "Frequency" "$freq MHz"
+    printf "│ %-15s : %-30s │\n" "Security" "$sec"
+    printf "│ %-15s : %-30s │\n" "Range" "$rng"
+    printf "│ %-15s : %-30s │\n" "Password" "NULL"
+    echo "└───────────────────────────────────────────────────────────┘"
+    echo
 done
 
-# =============================
-# 🔹 Optional: Test your own password
-# Only works on your own Wi-Fi network (educational)
-# =============================
-
-echo
-read -p "Enter your Wi-Fi SSID for testing: " TEST_SSID
-read -sp "Enter password(s) to test (comma separated): " PASSWORDS
-echo
-
-IFS=',' read -ra PW_ARR <<< "$PASSWORDS"
-
-for pw in "${PW_ARR[@]}"; do
-    pw_trimmed=$(echo $pw | xargs)
-    # Use Termux command to attempt connection (educational, your own Wi-Fi)
-    termux-wifi-connectioninfo | grep -q "$TEST_SSID" && echo "✅ Already connected to $TEST_SSID" && break
-    echo "🔑 Trying password '$pw_trimmed' for $TEST_SSID (educational test)..."
-    # NOTE: This does NOT hack, only attempts to use Termux API (legal)
-    termux-wifi-connect "$TEST_SSID" "$pw_trimmed" >/dev/null 2>&1
-    if termux-wifi-connectioninfo | grep -q "$TEST_SSID"; then
-        echo "🎉 Success! Password '$pw_trimmed' works for $TEST_SSID"
-        break
-    fi
-done
-
-echo
-echo "✅ Scan & Educational password test completed."
+echo "✅ Scan Completed. All passwords shown as NULL (legal & safe)"
