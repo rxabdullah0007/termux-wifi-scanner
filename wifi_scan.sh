@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Termux Wi-Fi Scanner - Color-coded & Frame
+# Termux Wi-Fi Scanner - Final Professional
 # Legal / Educational
 # Author: Rx Abdullah
 
@@ -13,7 +13,7 @@ RESET="\e[0m"
 echo -e "${CYAN}🔍 Scanning Wi-Fi networks... (wait a few seconds)${RESET}"
 SCAN_RESULT=$(termux-wifi-scaninfo 2>&1)
 
-# Check JSON
+# Validate JSON
 if ! echo "$SCAN_RESULT" | jq empty >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: termux-wifi-scaninfo valid JSON not returned.${RESET}"
     echo "$SCAN_RESULT"
@@ -24,17 +24,12 @@ echo
 echo -e "${CYAN}📡 Wi-Fi Networks Scan Results${RESET}"
 echo "==================================="
 
-# Process each network
 echo "$SCAN_RESULT" | jq -r '.[] | [
     (.ssid // "<hidden>"),
     .bssid,
     (.rssi|tostring),
-    (.frequency as $f |
-       (if $f == null then "-" 
-        elif ($f >= 5000) then ( (($f - 5000) / 5) | floor + 36 ) 
-        else ( (($f - 2400) - 2407) / 5 | floor + 1 ) end)
-    ),
-    (.frequency|tostring),
+    (.channel // "Unknown"),
+    (.frequency // "Unknown"),
     (.capabilities // "UNKNOWN")
 ] | @tsv' | while IFS=$'\t' read -r ssid bssid rssi channel freq caps; do
 
@@ -47,7 +42,7 @@ echo "$SCAN_RESULT" | jq -r '.[] | [
     elif echo "$caps_up" | grep -q "WEP"; then sec="WEP"
     fi
 
-    # Range estimate from RSSI
+    # Range estimate
     rssi_val=$(echo "$rssi" | sed 's/[^0-9-]//g')
     if [ -z "$rssi_val" ]; then rng="Unknown"; color="$YELLOW"
     elif [ "$rssi_val" -ge -50 ]; then rng="Very Close (0-10m)"; color="$GREEN"
@@ -57,10 +52,10 @@ echo "$SCAN_RESULT" | jq -r '.[] | [
     else rng="Very Far (>80m)"; color="$RED"
     fi
 
-    # Highlight hidden network
+    # Hidden network highlight
     if [ "$ssid" == "<hidden>" ]; then color="$CYAN"; fi
 
-    # Print in frame
+    # Print frame
     echo -e "${color}┌───────────────────────────────────────────────┐${RESET}"
     printf "${color}│ %-15s : %-30s │${RESET}\n" "SSID" "$ssid"
     printf "${color}│ %-15s : %-30s │${RESET}\n" "BSSID" "$bssid"
